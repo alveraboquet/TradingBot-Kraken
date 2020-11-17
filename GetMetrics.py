@@ -113,9 +113,9 @@ class GetAllMetrics:
         low = float(req['l'][1])
         open_market = float(req['o'])
         close_market = float(req['c'][0])
-        low_average, high_average = self.read_last_lines(filename)
+        low_average, high_average = self.get_low_and_high_average(filename)
 
-        moy = (float(high) + float(low) + float(open_market)) / 3
+        moy = (float(high) + float(low) + float(close_market)) / 3
         current_time = datetime.datetime.fromtimestamp(server_timestamp)
 
         csv_data = self.data_maker.format(current_time, high, low, open_market, close_market, moy, low_average,
@@ -140,7 +140,7 @@ class GetAllMetrics:
                 self.write_to_csv(filename, data)
             time.sleep(self.interval_time - ((time.time() - starttime) % self.interval_time))
 
-    def read_last_lines(self, currency):
+    def get_low_and_high_average(self, currency):
         if not os.path.isfile(self.path_csv.format(currency)):
             return 0.0, 0.0
         tab = []
@@ -160,16 +160,27 @@ class GetAllMetrics:
             low_average = low_average / self.average_last_values
             high_average = high_average / self.average_last_values
         else:
+            test = 0
             for i in range(1, lines):
                 tab.append(file_lines[i].replace('\n', '').split(','))
-
+                test = test + 1
             for i in tab:
                 low_average = low_average + float(i[2])
                 high_average = high_average + float(i[1])
-            low_average = low_average / lines - 1
-            high_average = high_average / lines - 1
+            low_average = low_average / (lines - 1)
+            high_average = high_average / (lines - 1)
 
         return low_average, high_average
+
+    def read_last_line(self, currency):
+        if not os.path.isfile(self.path_csv.format(currency)):
+            print("Crypto not found")
+            return None
+        else:
+            file = open(self.path_csv.format(currency), "r")
+            file_lines = file.readlines()
+            file.close()
+            return file_lines[len(file_lines)-1]
 
 
 def main():
